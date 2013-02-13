@@ -1,17 +1,12 @@
 ﻿using System;
-using System.ComponentModel;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using RunProcess.Internal;
 
 namespace RunProcess
 {
 	public class InteractiveShell
 	{
-		Kernel32.Startupinfo _si;
-		Kernel32.ProcessInformation _pi;
-		Pipe _stdIn, _stdErr, _stdOut;
+        ProcessHost _host;
 
 		public string ApplicationName { get; private set; }
 		protected string Prompt { get; set; }
@@ -45,21 +40,21 @@ namespace RunProcess
 
 			while (!stdOut.ToString().EndsWith("\n" + Prompt) && stdOut.ToString() != Prompt)
 			{
-				while (_stdErr.Peek() > 0)
+				while (_host.StdErr.Peek() > 0)
 				{
-					bytesReadCount = _stdErr.Read(buffer, 0, bufferLength);
+					bytesReadCount = _host.StdErr.Read(buffer, 0, bufferLength);
 					stdErr.Append(Encoding.GetString(buffer, 0, bytesReadCount));
 				}
-				while (_stdOut.Peek() > 0)
+				while (_host.StdOut.Peek() > 0)
 				{
-					bytesReadCount = _stdOut.Read(buffer, 0, bufferLength);
+					bytesReadCount = _host.StdOut.Read(buffer, 0, bufferLength);
 					stdOut.Append(Encoding.GetString(buffer, 0, bytesReadCount));
 				}
 				Thread.Sleep(20);
 			}
-			while (_stdErr.Peek() > 0)
+			while (_host.StdErr.Peek() > 0)
 			{
-				bytesReadCount = _stdErr.Read(buffer, 0, bufferLength);
+				bytesReadCount = _host.StdErr.Read(buffer, 0, bufferLength);
 				stdErr.Append(Encoding.GetString(buffer, 0, bytesReadCount));
 			}
 
@@ -83,24 +78,7 @@ namespace RunProcess
 		/// </summary>
 		public void Start(string applicationName, string workDirectory)
 		{
-            _stdIn = new Pipe(Pipe.Direction.In);
-            _stdErr = new Pipe(Pipe.Direction.Out);
-            _stdOut = new Pipe(Pipe.Direction.Out);
-
-			_si = new Kernel32.Startupinfo
-			{
-				wShowWindow = 0,
-				dwFlags = Kernel32.StartfUsestdhandles | Kernel32.StartfUseshowwindow,
-				hStdOutput = _stdOut.WriteHandle,
-				hStdError = _stdErr.WriteHandle,
-				hStdInput = _stdIn.ReadHandle
-			};
-
-			_si.cb = (uint)Marshal.SizeOf(_si);
-			_pi = new Kernel32.ProcessInformation();
-
-			if (!Kernel32.CreateProcess(applicationName, null, IntPtr.Zero, IntPtr.Zero, true, 0, IntPtr.Zero, workDirectory, ref _si, out _pi))
-				throw new Win32Exception(Marshal.GetLastWin32Error());
+            _host = new ProcessHost(applicationName, workDirectory);
 			ApplicationName = applicationName;
 		}
 
@@ -110,21 +88,13 @@ namespace RunProcess
 		public void Terminate()
 		{
 			SendCommand(ExitCommand);
-
-            _stdErr.Dispose();
-            _stdOut.Dispose();
-            _stdIn.Dispose();
-
-			if (!Kernel32.CloseHandle(_pi.hProcess))
-				throw new Win32Exception(Marshal.GetLastWin32Error());
-			if (!Kernel32.CloseHandle(_pi.hThread))
-				throw new Win32Exception(Marshal.GetLastWin32Error());
+			_host.Dispose();
 		}
 
 		void SendCommand(string s)
 		{
 			byte[] bytesToWrite = Encoding.GetBytes(s + "\r\n");
-			_stdIn.Write(bytesToWrite, 0, bytesToWrite.Length);
+			_host.StdIn.Write(bytesToWrite, 0, bytesToWrite.Length);
 		}
 	}
 }

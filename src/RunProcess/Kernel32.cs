@@ -5,11 +5,11 @@ namespace RunProcess
 {
 	public static class Kernel32
 	{
-		public const int HANDLE_FLAG_INHERIT = 1;
-		public const UInt32 STARTF_USESTDHANDLES = 0x00000100;
-		public const UInt32 STARTF_USESHOWWINDOW = 0x00000001;
+		public const int HandleFlagInherit = 1;
+		public const UInt32 StartfUsestdhandles = 0x00000100;
+		public const UInt32 StartfUseshowwindow = 0x00000001;
 
-		public struct SECURITY_ATTRIBUTES
+		public struct SecurityAttributes
 		{
 			public int length;
 			public IntPtr lpSecurityDescriptor;
@@ -17,7 +17,7 @@ namespace RunProcess
 			public bool bInheritHandle;
 		}
 
-		public struct STARTUPINFO
+		public struct Startupinfo
 		{
 			public uint cb;
 			public string lpReserved;
@@ -39,7 +39,7 @@ namespace RunProcess
 			public IntPtr hStdError;
 		}
 
-		public struct PROCESS_INFORMATION
+		public struct ProcessInformation
 		{
 			public IntPtr hProcess;
 			public IntPtr hThread;
@@ -57,8 +57,8 @@ namespace RunProcess
 		                                        uint dwCreationFlags,
 		                                        IntPtr lpEnvironment,
 		                                        string lpCurrentDirectory,
-		                                        ref STARTUPINFO lpStartupInfo,
-		                                        out PROCESS_INFORMATION lpProcessInformation);
+		                                        ref Startupinfo lpStartupInfo,
+		                                        out ProcessInformation lpProcessInformation);
 
 		[DllImport("kernel32.dll", SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
@@ -68,7 +68,7 @@ namespace RunProcess
 		[return: MarshalAs(UnmanagedType.Bool)]
 		public static extern bool CreatePipe(out IntPtr hReadPipe,
 		                                     out IntPtr hWritePipe,
-		                                     ref SECURITY_ATTRIBUTES lpPipeAttributes,
+		                                     ref SecurityAttributes lpPipeAttributes,
 		                                     uint nSize);
 
 		[DllImport("kernel32.dll", SetLastError = true)]

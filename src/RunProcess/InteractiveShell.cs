@@ -4,7 +4,7 @@ using System.Threading;
 
 namespace RunProcess
 {
-	public class InteractiveShell
+	public class InteractiveShell : IDisposable
 	{
         ProcessHost _host;
 
@@ -80,6 +80,7 @@ namespace RunProcess
 		{
             _host = new ProcessHost(applicationName, workDirectory);
 			ApplicationName = applicationName;
+            _host.Start();
 		}
 
 		/// <summary>
@@ -95,6 +96,16 @@ namespace RunProcess
 		{
 			byte[] bytesToWrite = Encoding.GetBytes(s + "\r\n");
 			_host.StdIn.Write(bytesToWrite, 0, bytesToWrite.Length);
+		}
+
+		public void Dispose()
+		{
+            _host.Dispose();
+		}
+
+		public bool IsAlive()
+		{
+			return _host.IsAlive();
 		}
 	}
 }

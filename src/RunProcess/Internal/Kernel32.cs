@@ -47,6 +47,21 @@ namespace RunProcess.Internal
 			public uint dwThreadId;
 		}
 
+		[Flags]
+		public enum ProcessAccessFlags : uint
+		{
+			All = 0x001F0FFF,
+			Terminate = 0x00000001,
+			CreateThread = 0x00000002,
+			VMOperation = 0x00000008,
+			VMRead = 0x00000010,
+			VMWrite = 0x00000020,
+			DupHandle = 0x00000040,
+			SetInformation = 0x00000200,
+			QueryInformation = 0x00000400,
+			Synchronize = 0x00100000
+		}
+
 		[DllImport("kernel32.dll", SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
 		public static extern bool CreateProcess(string lpApplicationName,
@@ -59,6 +74,15 @@ namespace RunProcess.Internal
 		                                        string lpCurrentDirectory,
 		                                        ref Startupinfo lpStartupInfo,
 		                                        out ProcessInformation lpProcessInformation);
+        
+		[DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        public static extern IntPtr OpenProcess(ProcessAccessFlags dwDesiredAccess,
+			                                    [MarshalAs(UnmanagedType.Bool)] bool bInheritHandle,
+			                                    uint dwProcessId);
+
+        //[DllImport("
+        // TODO: wait func:
+        // http://msdn.microsoft.com/en-gb/library/windows/desktop/ms687032(v=vs.85).aspx
 
 		[DllImport("kernel32.dll", SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]

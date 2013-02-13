@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace RunProcess
+namespace RunProcess.Internal
 {
 	public static class Kernel32
 	{

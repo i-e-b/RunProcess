@@ -36,11 +36,6 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="SimpleIntegrationTest.cs" />
@@ -50,9 +45,9 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ExampleProcess\ExampleProcess.csproj">
+    <ProjectReference Include="..\ExampleInteractiveProcess\ExampleInteractiveProcess.csproj">
       <Project>{2ed6ac52-1136-4487-be79-6619ff12b693}</Project>
-      <Name>ExampleProcess</Name>
+      <Name>ExampleInteractiveProcess</Name>
     </ProjectReference>
     <ProjectReference Include="..\RunProcess\RunProcess.csproj">
       <Project>{F933AC72-6C91-48A8-82DB-6648FA1A5864}</Project>

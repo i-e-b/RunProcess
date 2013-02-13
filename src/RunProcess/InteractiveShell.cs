@@ -1,33 +1,33 @@
-﻿namespace RunProcess
-{
-	using System;
-	using System.ComponentModel;
-	using System.Runtime.InteropServices;
-	using System.Text;
-	using System.Threading;
+﻿using System;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
+using RunProcess.Internal;
 
+namespace RunProcess
+{
 	public class InteractiveShell
 	{
-		IntPtr _hStdoutR, _hStdoutW, _hStderrR, _hStderrW, _hStdinR, _hStdinW;
-		Kernel32.SecurityAttributes _sa;
 		Kernel32.Startupinfo _si;
 		Kernel32.ProcessInformation _pi;
+		Pipe _stdIn, _stdErr, _stdOut;
 
 		public string ApplicationName { get; private set; }
 		protected string Prompt { get; set; }
 		protected string ExitCommand { get; set; }
 		protected Encoding Encoding { get; set; }
 
-        /// <summary>
-        /// Create a new wrapper for interactive shells.
-        /// </summary>
-        /// <param name="processPrompt">Prompt displayed by shell</param>
-        /// <param name="exitCommand">command to send for exit</param>
+		/// <summary>
+		/// Create a new wrapper for interactive shells.
+		/// </summary>
+		/// <param name="processPrompt">Prompt displayed by shell</param>
+		/// <param name="exitCommand">command to send for exit</param>
 		public InteractiveShell(string processPrompt, string exitCommand)
 		{
 			Encoding = Encoding.Default;
-            Prompt = processPrompt;
-            ExitCommand = exitCommand;
+			Prompt = processPrompt;
+			ExitCommand = exitCommand;
 		}
 
 		/// <summary>
@@ -45,21 +45,21 @@
 
 			while (!stdOut.ToString().EndsWith("\n" + Prompt) && stdOut.ToString() != Prompt)
 			{
-				while (Peek(_hStderrR) > 0)
+				while (_stdErr.Peek() > 0)
 				{
-					bytesReadCount = Read(_hStderrR, buffer, 0, bufferLength);
+					bytesReadCount = _stdErr.Read(buffer, 0, bufferLength);
 					stdErr.Append(Encoding.GetString(buffer, 0, bytesReadCount));
 				}
-				while (Peek(_hStdoutR) > 0)
+				while (_stdOut.Peek() > 0)
 				{
-					bytesReadCount = Read(_hStdoutR, buffer, 0, bufferLength);
+					bytesReadCount = _stdOut.Read(buffer, 0, bufferLength);
 					stdOut.Append(Encoding.GetString(buffer, 0, bytesReadCount));
 				}
 				Thread.Sleep(20);
 			}
-			while (Peek(_hStderrR) > 0)
+			while (_stdErr.Peek() > 0)
 			{
-				bytesReadCount = Read(_hStderrR, buffer, 0, bufferLength);
+				bytesReadCount = _stdErr.Read(buffer, 0, bufferLength);
 				stdErr.Append(Encoding.GetString(buffer, 0, bytesReadCount));
 			}
 
@@ -83,34 +83,17 @@
 		/// </summary>
 		public void Start(string applicationName, string workDirectory)
 		{
-			_sa = new Kernel32.SecurityAttributes
-			{
-				bInheritHandle = true,
-				lpSecurityDescriptor = IntPtr.Zero,
-				length = Marshal.SizeOf(typeof(Kernel32.SecurityAttributes))
-			};
-			_sa.lpSecurityDescriptor = IntPtr.Zero;
-
-			if (!Kernel32.CreatePipe(out _hStdoutR, out _hStdoutW, ref _sa, 0))
-				throw new Win32Exception(Marshal.GetLastWin32Error());
-			if (!Kernel32.CreatePipe(out _hStderrR, out _hStderrW, ref _sa, 0))
-				throw new Win32Exception(Marshal.GetLastWin32Error());
-			if (!Kernel32.CreatePipe(out _hStdinR, out _hStdinW, ref _sa, 0))
-				throw new Win32Exception(Marshal.GetLastWin32Error());
-			if (!Kernel32.SetHandleInformation(_hStdoutR, Kernel32.HandleFlagInherit, 0))
-				throw new Win32Exception(Marshal.GetLastWin32Error());
-			if (!Kernel32.SetHandleInformation(_hStderrR, Kernel32.HandleFlagInherit, 0))
-				throw new Win32Exception(Marshal.GetLastWin32Error());
-			if (!Kernel32.SetHandleInformation(_hStdinW, Kernel32.HandleFlagInherit, 0))
-				throw new Win32Exception(Marshal.GetLastWin32Error());
+            _stdIn = new Pipe(Pipe.Direction.In);
+            _stdErr = new Pipe(Pipe.Direction.Out);
+            _stdOut = new Pipe(Pipe.Direction.Out);
 
 			_si = new Kernel32.Startupinfo
 			{
 				wShowWindow = 0,
 				dwFlags = Kernel32.StartfUsestdhandles | Kernel32.StartfUseshowwindow,
-				hStdOutput = _hStdoutW,
-				hStdError = _hStderrW,
-				hStdInput = _hStdinR
+				hStdOutput = _stdOut.WriteHandle,
+				hStdError = _stdErr.WriteHandle,
+				hStdInput = _stdIn.ReadHandle
 			};
 
 			_si.cb = (uint)Marshal.SizeOf(_si);
@@ -127,51 +110,21 @@
 		public void Terminate()
 		{
 			SendCommand(ExitCommand);
-			if (!Kernel32.CloseHandle(_hStderrW))
-				throw new Win32Exception(Marshal.GetLastWin32Error());
-			if (!Kernel32.CloseHandle(_hStdoutW))
-				throw new Win32Exception(Marshal.GetLastWin32Error());
-			if (!Kernel32.CloseHandle(_hStdinW))
-				throw new Win32Exception(Marshal.GetLastWin32Error());
+
+            _stdErr.Dispose();
+            _stdOut.Dispose();
+            _stdIn.Dispose();
+
 			if (!Kernel32.CloseHandle(_pi.hProcess))
 				throw new Win32Exception(Marshal.GetLastWin32Error());
 			if (!Kernel32.CloseHandle(_pi.hThread))
 				throw new Win32Exception(Marshal.GetLastWin32Error());
 		}
 
-		static unsafe void Write(IntPtr h, byte[] buffer, int index, int count)
-		{
-			fixed (byte* p = buffer)
-			{
-			    int n = 0;
-				if (!Kernel32.WriteFile(h, p + index, count, &n, IntPtr.Zero))
-					throw new Win32Exception(Marshal.GetLastWin32Error());
-			}
-		}
-
-		static unsafe int Peek(IntPtr h)
-		{
-			int n = 0;
-			if (!Kernel32.PeekNamedPipe(h, IntPtr.Zero, 0, IntPtr.Zero, &n, IntPtr.Zero))
-				throw new Win32Exception(Marshal.GetLastWin32Error());
-			return n;
-		}
-
-		static unsafe int Read(IntPtr h, byte[] buffer, int index, int count)
-		{
-			int n = 0;
-			fixed (byte* p = buffer)
-			{
-				if (!Kernel32.ReadFile(h, p + index, count, &n, IntPtr.Zero))
-					throw new Win32Exception(Marshal.GetLastWin32Error());
-			}
-			return n;
-		}
-
 		void SendCommand(string s)
 		{
 			byte[] bytesToWrite = Encoding.GetBytes(s + "\r\n");
-			Write(_hStdinW, bytesToWrite, 0, bytesToWrite.Length);
+			_stdIn.Write(bytesToWrite, 0, bytesToWrite.Length);
 		}
 	}
 }

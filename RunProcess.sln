@@ -9,7 +9,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{1F1B9799
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Integration.Tests", "src\Integration.Tests\Integration.Tests.csproj", "{EC33E87F-C86B-4FBB-AEEA-6FF597EDDD68}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExampleProcess", "src\ExampleProcess\ExampleProcess.csproj", "{2ED6AC52-1136-4487-BE79-6619FF12B693}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExampleInteractiveProcess", "src\ExampleInteractiveProcess\ExampleInteractiveProcess.csproj", "{2ED6AC52-1136-4487-BE79-6619FF12B693}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

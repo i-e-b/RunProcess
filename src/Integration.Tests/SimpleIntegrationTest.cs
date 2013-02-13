@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using NUnit.Framework;
 using RunProcess;
 
@@ -7,7 +8,6 @@ namespace Integration.Tests
     [TestFixture]
     public class SimpleIntegrationTest
     {
-
         [Test]
         public void can_start_interact_with_and_stop_a_process ()
         {
@@ -20,7 +20,10 @@ namespace Integration.Tests
             var interact = subject.SendAndReceive("This is a test");
             Assert.That(interact.Item1, Is.StringStarting("You wrote This is a test"));
 
+	        Console.WriteLine(subject.ApplicationName);
             subject.Terminate();
+
+            Assert.Pass();
         }
     }
 }

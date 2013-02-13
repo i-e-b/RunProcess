@@ -1,0 +1,24 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RunProcess", "src\RunProcess\RunProcess.csproj", "{F933AC72-6C91-48A8-82DB-6648FA1A5864}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Implementation", "Implementation", "{C4A07E73-A4EF-4777-81FE-798410480111}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{1F1B9799-FEA8-4145-90BD-087C73617EA4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F933AC72-6C91-48A8-82DB-6648FA1A5864}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F933AC72-6C91-48A8-82DB-6648FA1A5864}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F933AC72-6C91-48A8-82DB-6648FA1A5864}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F933AC72-6C91-48A8-82DB-6648FA1A5864}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

@@ -208,8 +208,21 @@ namespace Integration.Tests
                 processId = subject.ProcessId();
             }
 
-            var ex = Assert.Throws<ArgumentException>(() => Process.GetProcessById((int)processId) );
-            Assert.That(ex.Message, Contains.Substring(processId+" is not running"));
+			try
+			{
+				// system.diagnostics.process throws in debug mode, returns null in release mode!
+				var prc = Process.GetProcessById((int)processId);
+				Assert.That(prc, Is.Null);
+			}
+			catch (ArgumentException)
+			{
+				Assert.Pass();
+			}
+            catch (InvalidOperationException)
+            {
+                Assert.Pass();
+            }
+            Assert.Fail();
         }
 
         [Test, Explicit,

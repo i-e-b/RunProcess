@@ -10,7 +10,9 @@ namespace Integration.Tests
     [TestFixture]
     public class SimpleIntegrationTests
     {
-        [Test]
+	    readonly TimeSpan one_second = TimeSpan.FromSeconds(1);
+
+	    [Test]
         public void can_start_interact_with_and_stop_a_process ()
         {
             using (var subject = new InteractiveShell(">", "bye"))
@@ -69,16 +71,32 @@ namespace Integration.Tests
             {
                 subject.Start("wait");
 
-                var ended = subject.WaitForExit(TimeSpan.FromSeconds(1));
+                var ended = subject.WaitForExit(one_second);
 
                 Assert.That(ended, Is.False, "Ended");
                 Assert.That(subject.IsAlive(), Is.True, "Alive");
 
                 subject.Kill();
-                subject.WaitForExit(TimeSpan.FromSeconds(1));
+                var endedAfterKill = subject.WaitForExit(one_second);
 
+                Assert.That(endedAfterKill, Is.True, "ended after kill");
                 Assert.That(subject.IsAlive(), Is.False, "Alive after kill");
+                Assert.That(subject.ExitCode(), Is.EqualTo(127), "standard killed code");
             }
         }
-    }
+
+		[Test]
+		public void can_get_exit_code_from_process()
+		{
+			using (var subject = new ProcessHost("./ExampleNoninteractiveProcess.exe", Directory.GetCurrentDirectory()))
+			{
+                subject.Start("return 1729");
+
+                subject.WaitForExit(one_second);
+                var code = subject.ExitCode();
+
+                Assert.That(code, Is.EqualTo(1729));
+			}
+		}
+	}
 }

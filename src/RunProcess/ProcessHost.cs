@@ -75,15 +75,26 @@ namespace RunProcess
         /// Will return true if the process is unstarted or already exited.
         /// </summary>
 		public bool WaitForExit(TimeSpan timeout)
-		{
-            if ((_pi.hProcess == IntPtr.Zero) || (_pi.hThread == IntPtr.Zero)) return true;
-            
-            var processRef = Kernel32.OpenProcess(Kernel32.ProcessAccessFlags.Synchronize, false, _pi.dwProcessId);
+        {
+            int dummy;
+            return WaitForExit(timeout, out dummy);
+        }
+        
+        /// <summary>
+        /// Waits a given time for the process to exit.
+        /// Returns true if exited within timeout, false if still running after timeout.
+        /// Will return true if the process is unstarted or already exited.
+        /// Gives process exit code, or 0 if timed out.
+        /// </summary>
+        public bool WaitForExit(TimeSpan timeout, out int exitCode) {
+            exitCode = 0;
+			if ((_pi.hProcess == IntPtr.Zero) || (_pi.hThread == IntPtr.Zero)) return true;
+
+			var processRef = Kernel32.OpenProcess(Kernel32.ProcessAccessFlags.Synchronize | Kernel32.ProcessAccessFlags.QueryInformation, false, _pi.dwProcessId);
             if (processRef == IntPtr.Zero) return true;
             var err = Marshal.GetLastWin32Error();
 
-            Kernel32.WaitResult result;
-			try
+	        try
 			{
 				if (err == WindowsErrors.InvalidArgument) return true; // already closed
 				if (err != 0) throw new Win32Exception(err);
@@ -92,17 +103,31 @@ namespace RunProcess
                     ? long.MaxValue - 1L
 					: (long)timeout.TotalMilliseconds;
 
-				result = Kernel32.WaitForSingleObject(processRef, safeWait);
+				var result = Kernel32.WaitForSingleObject(processRef, safeWait);
+
+				switch (result)
+				{
+					case Kernel32.WaitResult.WaitFailed:
+						throw new Win32Exception("Wait failed. Possibly failed to get Synchronize privilege");
+
+					case Kernel32.WaitResult.WaitComplete:
+						if (!Kernel32.GetExitCodeProcess(_pi.hProcess, out exitCode))
+							throw new Win32Exception(Marshal.GetLastWin32Error());
+						return true;
+
+					case Kernel32.WaitResult.WaitTimeout:
+						return false;
+
+					case Kernel32.WaitResult.WaitAbandoned:
+						return false;
+
+					default: return false;
+				}
 			}
-            finally
+			finally
 			{
 				Kernel32.CloseHandle(processRef);
 			}
-
-	        if (result == Kernel32.WaitResult.WaitFailed)
-                throw new Win32Exception("Wait failed. Possibly failed to get Synchronize privilege");
-
-            return (result != Kernel32.WaitResult.WaitTimeout);
 		}
 
         /// <summary>
@@ -112,6 +137,18 @@ namespace RunProcess
 		{
 			if (!Kernel32.TerminateProcess(_pi.hProcess, 127))
 				throw new Win32Exception(Marshal.GetLastWin32Error());
+		}
+
+        /// <summary>
+        /// Get exit code from process. Throws if not exited.
+        /// Use WaitForExit if you want to wait for a return code
+        /// </summary>
+		public int ExitCode()
+		{
+            int code;
+            if (!WaitForExit(TimeSpan.Zero, out code))
+	            throw new Exception("Process not exited");
+			return code;
 		}
 
 		~ProcessHost()

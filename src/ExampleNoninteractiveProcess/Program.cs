@@ -10,7 +10,7 @@ namespace ExampleNoninteractiveProcess
         public const string StdOutMsg = "This is my little diatribe!";
         public const string StdErrMsg = "Here is a message on std err";
 
-		static void Main(string[] args)
+		static int Main(string[] args)
 		{
             if (args.Length > 0 && args[0] == "wait")
             {
@@ -23,7 +23,13 @@ namespace ExampleNoninteractiveProcess
             if (args.Length > 0 && args[0] == "print")
             {
 	            Console.WriteLine(string.Join(" ", args.Skip(1)));
-                return;
+                return 0;
+            }
+
+            
+            if (args.Length > 1 && args[0] == "return")
+            {
+                return int.Parse(args[1]);
             }
 
 			Console.WriteLine(StdOutMsg);
@@ -32,6 +38,8 @@ namespace ExampleNoninteractiveProcess
                 var msgBytes = Encoding.ASCII.GetBytes(StdErrMsg);
                 stdErr.Write(msgBytes, 0, msgBytes.Length);
             }
+
+            return 0;
 		}
 	}
 }

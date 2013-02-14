@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Text;
 using System.Threading;
 
@@ -17,6 +18,12 @@ namespace ExampleNoninteractiveProcess
                 {
 	                Thread.Sleep(1000);
                 }
+            }
+
+            if (args.Length > 0 && args[0] == "print")
+            {
+	            Console.WriteLine(string.Join(" ", args.Skip(1)));
+                return;
             }
 
 			Console.WriteLine(StdOutMsg);

@@ -1,6 +1,5 @@
 using System;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using RunProcess.Internal;
@@ -41,9 +40,25 @@ namespace RunProcess
 
         public void Start()
         {
-			if (!Kernel32.CreateProcess(_executablePath, null, IntPtr.Zero, IntPtr.Zero, true, 0, IntPtr.Zero, _workingDirectory, ref _si, out _pi))
-				throw new Win32Exception(Marshal.GetLastWin32Error());
+            Start(null);
         }
+
+		public void Start(string arguments)
+		{
+            string safePath;
+
+            if (_executablePath.StartsWith("\"") && _executablePath.EndsWith("\"")) safePath = _executablePath;
+            else safePath = "\"" + _executablePath + "\"";
+
+            if (arguments != null)
+            {
+                safePath += " ";
+                safePath += arguments;
+            }
+
+			if (!Kernel32.CreateProcess(null, safePath, IntPtr.Zero, IntPtr.Zero, true, 0, IntPtr.Zero, _workingDirectory, ref _si, out _pi))
+				throw new Win32Exception(Marshal.GetLastWin32Error());
+		}
 
 		public Pipe StdIn { get { return _stdIn; } }
 		public Pipe StdErr { get { return _stdErr; } }
@@ -53,19 +68,25 @@ namespace RunProcess
         {
             if ((_pi.hProcess == IntPtr.Zero) || (_pi.hThread == IntPtr.Zero)) return false;
             
-            var processRef = Kernel32.OpenProcess(Kernel32.ProcessAccessFlags.QueryInformation, false, _pi.dwProcessId);
+            var processRef = Kernel32.OpenProcess(Kernel32.ProcessAccessFlags.Synchronize, false, _pi.dwProcessId);
             if (processRef == IntPtr.Zero) return false;
             var err = Marshal.GetLastWin32Error();
 
-            if (err != 0)
-            {
-                Kernel32.CloseHandle(processRef);
-                return false;
-            }
+            Kernel32.WaitResult result;
+			try
+			{
+				if (err == WindowsErrors.InvalidArgument) return false; // already closed
+				if (err != 0) throw new Win32Exception(err);
 
-	        // TODO, use wait func from Kernel32 with zero millis.
-            var result = Kernel32.WaitForSingleObject(processRef, 1);
-            Kernel32.CloseHandle(processRef);
+				result = Kernel32.WaitForSingleObject(processRef, 1);
+			}
+            finally
+			{
+				Kernel32.CloseHandle(processRef);
+			}
+
+	        if (result == Kernel32.WaitResult.WaitFailed)
+                throw new Win32Exception("Wait failed. Possibly failed to get Synchronize privilege");
 
             return (result == Kernel32.WaitResult.WaitTimeout);
         }

@@ -23,6 +23,7 @@ namespace Integration.Tests
 	            Assert.That(interact.Item1, Is.StringStarting("You wrote This is a test"));
 
                 Assert.That(subject.IsAlive());
+
 	            subject.Terminate();
                 Assert.That(subject.IsAlive(), Is.False);
             }
@@ -35,12 +36,38 @@ namespace Integration.Tests
             using (var subject = new ProcessHost("./ExampleNoninteractiveProcess.exe", Directory.GetCurrentDirectory()))
 			{
 				subject.Start();
+                Thread.Sleep(250);
 				
 				Assert.That(subject.IsAlive(), Is.False);
 
-                var output= subject.StdOut.ReadAllText(Encoding.Default);
-                Assert.That(output, Is.StringStarting(ExampleNoninteractiveProcess.Program.StdOutMsg));
+				var output = subject.StdOut.ReadAllText(Encoding.Default);
+                Assert.That(output, Is.StringStarting(ExampleNoninteractiveProcess.Program.StdOutMsg), "Standard Out");
+
+				var err = subject.StdErr.ReadAllText(Encoding.Default);
+                Assert.That(err, Is.StringStarting(ExampleNoninteractiveProcess.Program.StdErrMsg), "Standard Error");
 			}
         }
+		
+		[Test]
+        public void can_pass_arguments_to_process ()
+        {
+            using (var subject = new ProcessHost("./ExampleNoninteractiveProcess.exe", Directory.GetCurrentDirectory()))
+            {
+				subject.Start("print hello world");
+                Thread.Sleep(250);
+				
+				var output = subject.StdOut.ReadAllText(Encoding.Default);
+                Assert.That(output, Is.StringStarting("hello world"));
+            }
+        }
+
+       /* [Test]
+        public void can_wait_for_process_and_kill_if_required ()
+        {
+            using (var subject = new ProcessHost("./ExampleNoninteractiveProcess.exe", Directory.GetCurrentDirectory()))
+            {
+
+            }
+        }*/
     }
 }

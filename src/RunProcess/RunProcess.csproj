@@ -39,6 +39,7 @@
     <Compile Include="InteractiveShell.cs" />
     <Compile Include="Internal\Kernel32.cs" />
     <Compile Include="Internal\Pipe.cs" />
+    <Compile Include="Internal\WindowsErrors.cs" />
     <Compile Include="ProcessHost.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

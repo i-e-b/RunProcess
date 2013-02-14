@@ -62,6 +62,14 @@ namespace RunProcess.Internal
 			Synchronize = 0x00100000
 		}
 
+		public enum WaitResult : ulong
+		{
+            WaitAbandoned = 0x00000080UL,
+			WaitComplete =  0,
+            WaitTimeout =   0x00000102UL,
+            WaitFailed =    0xFFFFFFFFUL
+		}
+
 		[DllImport("kernel32.dll", SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
 		public static extern bool CreateProcess(string lpApplicationName,
@@ -79,10 +87,9 @@ namespace RunProcess.Internal
         public static extern IntPtr OpenProcess(ProcessAccessFlags dwDesiredAccess,
 			                                    [MarshalAs(UnmanagedType.Bool)] bool bInheritHandle,
 			                                    uint dwProcessId);
-
-        //[DllImport("
-        // TODO: wait func:
-        // http://msdn.microsoft.com/en-gb/library/windows/desktop/ms687032(v=vs.85).aspx
+        
+		[DllImport("kernel32.dll", SetLastError = true)]
+        public static extern WaitResult WaitForSingleObject(IntPtr hHandle, long dwMilliseconds);
 
 		[DllImport("kernel32.dll", SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]

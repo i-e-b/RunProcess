@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Text;
 using System.Threading;
 using NUnit.Framework;
 using RunProcess;
@@ -34,13 +35,11 @@ namespace Integration.Tests
             using (var subject = new ProcessHost("./ExampleNoninteractiveProcess.exe", Directory.GetCurrentDirectory()))
 			{
 				subject.Start();
-                Thread.Sleep(1000);
-                
-				
 				
 				Assert.That(subject.IsAlive(), Is.False);
 
-
+                var output= subject.StdOut.ReadAllText(Encoding.Default);
+                Assert.That(output, Is.StringStarting(ExampleNoninteractiveProcess.Program.StdOutMsg));
 			}
         }
     }

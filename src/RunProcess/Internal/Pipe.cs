@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 
 namespace RunProcess.Internal
@@ -85,6 +86,22 @@ namespace RunProcess.Internal
 		~Pipe()
 		{
 			Dispose();
+		}
+
+        /// <summary>
+        /// Read all available data on the pipe as text
+        /// </summary>
+		public string ReadAllText(Encoding encoding)
+		{
+            var sb = new StringBuilder();
+            var buf = new byte[1024];
+	        while (Peek() > 0)
+            {
+	            var len = Read(buf,0,1024);
+	            sb.Append(encoding.GetString(buf,0,len));
+            }
+
+	        return sb.ToString();
 		}
 	}
 }

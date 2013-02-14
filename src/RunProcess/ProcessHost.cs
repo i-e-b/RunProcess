@@ -56,11 +56,18 @@ namespace RunProcess
             var processRef = Kernel32.OpenProcess(Kernel32.ProcessAccessFlags.QueryInformation, false, _pi.dwProcessId);
             if (processRef == IntPtr.Zero) return false;
             var err = Marshal.GetLastWin32Error();
+
+            if (err != 0)
+            {
+                Kernel32.CloseHandle(processRef);
+                return false;
+            }
+
+	        // TODO, use wait func from Kernel32 with zero millis.
+            var result = Kernel32.WaitForSingleObject(processRef, 1);
             Kernel32.CloseHandle(processRef);
 
-            // TODO, use wait func from Kernel32 with zero millis.
-
-            return (err == 0);
+            return (result == Kernel32.WaitResult.WaitTimeout);
         }
 
 		~ProcessHost()

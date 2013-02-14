@@ -64,32 +64,32 @@ namespace RunProcess.Internal
 
 		public enum WaitResult : ulong
 		{
-            WaitAbandoned = 0x00000080UL,
-			WaitComplete =  0,
-            WaitTimeout =   0x00000102UL,
-            WaitFailed =    0xFFFFFFFFUL
+			WaitAbandoned = 0x00000080UL,
+			WaitComplete = 0,
+			WaitTimeout = 0x00000102UL,
+			WaitFailed = 0xFFFFFFFFUL
 		}
 
 		[DllImport("kernel32.dll", SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
 		public static extern bool CreateProcess(string lpApplicationName,
-		                                        string lpCommandLine,
-		                                        IntPtr lpProcessAttributes,
-		                                        IntPtr lpThreadAttributes,
-		                                        [MarshalAs(UnmanagedType.Bool)] bool bInheritHandles,
-		                                        uint dwCreationFlags,
-		                                        IntPtr lpEnvironment,
-		                                        string lpCurrentDirectory,
-		                                        ref Startupinfo lpStartupInfo,
-		                                        out ProcessInformation lpProcessInformation);
-        
+												string lpCommandLine,
+												IntPtr lpProcessAttributes,
+												IntPtr lpThreadAttributes,
+												[MarshalAs(UnmanagedType.Bool)] bool bInheritHandles,
+												uint dwCreationFlags,
+												IntPtr lpEnvironment,
+												string lpCurrentDirectory,
+												ref Startupinfo lpStartupInfo,
+												out ProcessInformation lpProcessInformation);
+
 		[DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        public static extern IntPtr OpenProcess(ProcessAccessFlags dwDesiredAccess,
-			                                    [MarshalAs(UnmanagedType.Bool)] bool bInheritHandle,
-			                                    uint dwProcessId);
-        
+		public static extern IntPtr OpenProcess(ProcessAccessFlags dwDesiredAccess,
+												[MarshalAs(UnmanagedType.Bool)] bool bInheritHandle,
+												uint dwProcessId);
+
 		[DllImport("kernel32.dll", SetLastError = true)]
-        public static extern WaitResult WaitForSingleObject(IntPtr hHandle, long dwMilliseconds);
+		public static extern WaitResult WaitForSingleObject(IntPtr hHandle, long dwMilliseconds);
 
 		[DllImport("kernel32.dll", SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
@@ -98,7 +98,7 @@ namespace RunProcess.Internal
 		[DllImport("kernel32.dll", SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
 		public static extern bool GetExitCodeProcess(IntPtr hProcess, out int exitCode);
-        
+
 		[DllImport("kernel32.dll", SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
 		public static extern bool TerminateProcess(IntPtr hProcess, uint exitCode);
@@ -106,34 +106,34 @@ namespace RunProcess.Internal
 		[DllImport("kernel32.dll", SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
 		public static extern bool CreatePipe(out IntPtr hReadPipe,
-		                                     out IntPtr hWritePipe,
-		                                     ref SecurityAttributes lpPipeAttributes,
-		                                     uint nSize);
+											 out IntPtr hWritePipe,
+											 ref SecurityAttributes lpPipeAttributes,
+											 uint nSize);
 
 		[DllImport("kernel32.dll", SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
-		public static extern unsafe bool PeekNamedPipe(IntPtr hNamedPipe,
-		                                               IntPtr pBuffer,
-		                                               int nBufferSize,
-		                                               IntPtr lpBytesRead,
-		                                               int* lpTotalBytesAvail,
-		                                               IntPtr lpBytesLeftThisMessage);
+		public static extern bool PeekNamedPipe(IntPtr hNamedPipe,
+												IntPtr pBuffer,
+												int nBufferSize,
+												IntPtr lpBytesRead,
+												IntPtr lpTotalBytesAvail,
+												IntPtr lpBytesLeftThisMessage);
 
 		[DllImport("kernel32.dll", SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
 		public static extern unsafe bool ReadFile(IntPtr hFile,
-		                                          void* pBuffer,
-		                                          int nNumberOfBytesToRead,
-		                                          int* lpNumberOfBytesRead,
-		                                          IntPtr lpOverlapped);
+												  void* pBuffer,
+												  int nNumberOfBytesToRead,
+												  int* lpNumberOfBytesRead,
+												  IntPtr lpOverlapped);
 
 		[DllImport("kernel32.dll", SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
 		public static extern unsafe bool WriteFile(IntPtr hFile,
-		                                           void* pBuffer,
-		                                           int nNumberOfBytesToWrite,
-		                                           int* lpNumberOfBytesWritten,
-		                                           IntPtr lpOverlapped);
+												   void* pBuffer,
+												   int nNumberOfBytesToWrite,
+												   int* lpNumberOfBytesWritten,
+												   IntPtr lpOverlapped);
 
 		[DllImport("kernel32.dll", SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]

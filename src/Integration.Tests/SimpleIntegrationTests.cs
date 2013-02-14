@@ -98,5 +98,83 @@ namespace Integration.Tests
                 Assert.That(code, Is.EqualTo(1729));
 			}
 		}
-	}
+
+        [Test]
+        public void can_write_strings_from_a_processes_pipes ()
+        {
+            using (var subject = new ProcessHost("./ExampleInteractiveProcess.exe", Directory.GetCurrentDirectory()))
+            {
+                subject.Start();
+
+                subject.StdIn.WriteAllText(Encoding.Default, "bye\r\n");
+
+                int exitCode;
+                var ok = subject.WaitForExit(one_second, out exitCode);
+
+                Assert.That(ok, Is.True);
+                Assert.That(exitCode, Is.EqualTo(0));
+            }
+        }
+
+        [Test]
+        public void Reading_from_an_IN_pipe_throws_an_exception ()
+        {
+            using (var subject = new ProcessHost("./ExampleNoninteractiveProcess.exe", Directory.GetCurrentDirectory()))
+            {
+                subject.Start();
+
+	            var dummy = new byte[2];
+
+                Assert.Throws<Exception>(() => subject.StdIn.Peek());
+	            Assert.Throws<Exception>(() => subject.StdIn.Read(dummy, 0, 1));
+                
+                int exitCode;
+                var exited = subject.WaitForExit(one_second, out exitCode);
+
+                Assert.That(exited, Is.True);
+                Assert.That(exitCode, Is.EqualTo(0));
+            }
+        }
+
+        
+        [Test]
+        public void Writing_to_an_OUT_pipe_throws_an_exception ()
+        {
+            using (var subject = new ProcessHost("./ExampleNoninteractiveProcess.exe", Directory.GetCurrentDirectory()))
+            {
+                subject.Start();
+
+	            var dummy = new byte[2];
+
+	            Assert.Throws<Exception>(() => subject.StdOut.Write(dummy, 0, 1));
+                
+                int exitCode;
+                var exited = subject.WaitForExit(one_second, out exitCode);
+
+                Assert.That(exited, Is.True);
+                Assert.That(exitCode, Is.EqualTo(0));
+            }
+        }
+
+	    [Test]
+        public void can_read_and_write_single_lines_on_a_processes_pipes ()
+        {
+            using (var subject = new ProcessHost("./ExampleInteractiveProcess.exe", Directory.GetCurrentDirectory()))
+            {
+                subject.Start();
+
+                
+	            var read = subject.StdOut.ReadLine(Encoding.Default, one_second);
+	            Assert.That(read, Is.EqualTo(ExampleProcess.Program.Intro));
+
+                subject.StdIn.WriteLine(Encoding.Default, "bye");
+
+                int exitCode;
+                var ok = subject.WaitForExit(one_second, out exitCode);
+
+                Assert.That(ok, Is.True);
+                Assert.That(exitCode, Is.EqualTo(0));
+            }
+        }
+    }
 }

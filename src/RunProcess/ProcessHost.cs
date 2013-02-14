@@ -1,7 +1,6 @@
 using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using RunProcess.Internal;
 
@@ -98,6 +97,7 @@ namespace RunProcess
 	        try
 			{
 				if (err == WindowsErrors.InvalidArgument) return true; // already closed
+                if (err == WindowsErrors.BadEnvironmentOption) return true; // killed by System.Diagnostics.Process
 				if (err != 0) throw new Win32Exception(err);
 
                 var safeWait = (timeout.TotalMilliseconds >= long.MaxValue)
@@ -152,6 +152,15 @@ namespace RunProcess
 			return code;
 		}
 
+        /// <summary>
+        /// Return hosted process id
+        /// </summary>
+        /// <returns></returns>
+		public uint ProcessId()
+		{
+			return _pi.dwProcessId;
+		}
+
 		~ProcessHost()
 		{
 			Dispose();
@@ -159,17 +168,19 @@ namespace RunProcess
 
 		public void Dispose()
 		{
+            try { Kill(); } catch (Win32Exception) { }
+
 			StdErr.Dispose();
 			StdOut.Dispose();
 			StdIn.Dispose();
 
-			var processHandle = Interlocked.Exchange(ref _pi.hProcess, IntPtr.Zero);
-			if (processHandle != IntPtr.Zero && !Kernel32.CloseHandle(processHandle))
-				throw new Win32Exception(Marshal.GetLastWin32Error());
-
 			var processMainThread = Interlocked.Exchange(ref _pi.hThread, IntPtr.Zero);
-			if (processMainThread != IntPtr.Zero && !Kernel32.CloseHandle(processMainThread))
-				throw new Win32Exception(Marshal.GetLastWin32Error());
+			if (processMainThread != IntPtr.Zero)
+				Kernel32.CloseHandle(processMainThread);
+
+			var processHandle = Interlocked.Exchange(ref _pi.hProcess, IntPtr.Zero);
+			if (processHandle != IntPtr.Zero )
+				Kernel32.CloseHandle(processHandle);
 		}
 	}
 }

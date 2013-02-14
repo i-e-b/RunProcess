@@ -66,19 +66,33 @@ namespace RunProcess
 
         public bool IsAlive()
         {
-            if ((_pi.hProcess == IntPtr.Zero) || (_pi.hThread == IntPtr.Zero)) return false;
+            return ! WaitForExit(TimeSpan.FromMilliseconds(1));
+        }
+
+        /// <summary>
+        /// Waits a given time for the process to exit.
+        /// Returns true if exited within timeout, false if still running after timeout.
+        /// Will return true if the process is unstarted or already exited.
+        /// </summary>
+		public bool WaitForExit(TimeSpan timeout)
+		{
+            if ((_pi.hProcess == IntPtr.Zero) || (_pi.hThread == IntPtr.Zero)) return true;
             
             var processRef = Kernel32.OpenProcess(Kernel32.ProcessAccessFlags.Synchronize, false, _pi.dwProcessId);
-            if (processRef == IntPtr.Zero) return false;
+            if (processRef == IntPtr.Zero) return true;
             var err = Marshal.GetLastWin32Error();
 
             Kernel32.WaitResult result;
 			try
 			{
-				if (err == WindowsErrors.InvalidArgument) return false; // already closed
+				if (err == WindowsErrors.InvalidArgument) return true; // already closed
 				if (err != 0) throw new Win32Exception(err);
 
-				result = Kernel32.WaitForSingleObject(processRef, 1);
+                var safeWait = (timeout.TotalMilliseconds >= long.MaxValue)
+                    ? long.MaxValue - 1L
+					: (long)timeout.TotalMilliseconds;
+
+				result = Kernel32.WaitForSingleObject(processRef, safeWait);
 			}
             finally
 			{
@@ -88,8 +102,17 @@ namespace RunProcess
 	        if (result == Kernel32.WaitResult.WaitFailed)
                 throw new Win32Exception("Wait failed. Possibly failed to get Synchronize privilege");
 
-            return (result == Kernel32.WaitResult.WaitTimeout);
-        }
+            return (result != Kernel32.WaitResult.WaitTimeout);
+		}
+
+        /// <summary>
+        /// Immediately terminate a process
+        /// </summary>
+		public void Kill()
+		{
+			if (!Kernel32.TerminateProcess(_pi.hProcess, 127))
+				throw new Win32Exception(Marshal.GetLastWin32Error());
+		}
 
 		~ProcessHost()
 		{

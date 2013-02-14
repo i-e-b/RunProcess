@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Text;
 using System.Threading;
 using NUnit.Framework;
@@ -7,7 +8,7 @@ using RunProcess;
 namespace Integration.Tests
 {
     [TestFixture]
-    public class SimpleIntegrationTest
+    public class SimpleIntegrationTests
     {
         [Test]
         public void can_start_interact_with_and_stop_a_process ()
@@ -61,13 +62,23 @@ namespace Integration.Tests
             }
         }
 
-       /* [Test]
+        [Test]
         public void can_wait_for_process_and_kill_if_required ()
         {
             using (var subject = new ProcessHost("./ExampleNoninteractiveProcess.exe", Directory.GetCurrentDirectory()))
             {
+                subject.Start("wait");
 
+                var ended = subject.WaitForExit(TimeSpan.FromSeconds(1));
+
+                Assert.That(ended, Is.False, "Ended");
+                Assert.That(subject.IsAlive(), Is.True, "Alive");
+
+                subject.Kill();
+                subject.WaitForExit(TimeSpan.FromSeconds(1));
+
+                Assert.That(subject.IsAlive(), Is.False, "Alive after kill");
             }
-        }*/
+        }
     }
 }

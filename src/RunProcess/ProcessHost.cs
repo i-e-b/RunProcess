@@ -96,9 +96,7 @@ namespace RunProcess
 
 	        try
 			{
-				if (err == WindowsErrors.InvalidArgument) return true; // already closed
-                if (err == WindowsErrors.BadEnvironmentOption) return true; // killed by System.Diagnostics.Process
-				if (err != 0) throw new Win32Exception(err);
+				if (err != 0) return true;
 
                 var safeWait = (timeout.TotalMilliseconds >= long.MaxValue)
                     ? long.MaxValue - 1L

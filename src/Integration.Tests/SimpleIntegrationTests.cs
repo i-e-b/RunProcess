@@ -207,7 +207,7 @@ namespace Integration.Tests
 	            subject.Start();
                 processId = subject.ProcessId();
             }
-
+            Thread.Sleep(500);
 			try
 			{
 				// system.diagnostics.process throws in debug mode, returns null in release mode!

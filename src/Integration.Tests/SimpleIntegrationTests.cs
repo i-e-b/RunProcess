@@ -14,9 +14,27 @@ namespace Integration.Tests
 		readonly TimeSpan one_second = TimeSpan.FromSeconds(1);
 
 		[TestFixtureSetUp]
-		public void is_compatible_windows ()
+		public void is_compatible_windows()
 		{
 			Assert.That(ProcessHost.HostIsCompatible(), "Host operating system can't run these tests");
+		}
+
+		[Test]
+		public void can_call_environment_executables ()
+		{
+			using (var subject = new ProcessHost("net", null))
+			{
+				subject.Start();
+				Thread.Sleep(250);
+
+				Assert.That(subject.IsAlive(), Is.False);
+
+				var output = subject.StdOut.ReadAllText(Encoding.Default);
+				Assert.That(output, Is.EqualTo(""), "Standard Out");
+
+				var err = subject.StdErr.ReadAllText(Encoding.Default);
+				Assert.That(err, Is.StringStarting("The syntax of this command is:"), "Standard Error");
+			}
 		}
 
 		[Test]
@@ -99,7 +117,7 @@ namespace Integration.Tests
 			{
 				subject.Start("return 1729");
 
-				subject.WaitForExit(one_second);
+				Assert.That(subject.WaitForExit(one_second), "process did not exit");
 				var code = subject.ExitCode();
 
 				Assert.That(code, Is.EqualTo(1729));
@@ -189,12 +207,12 @@ namespace Integration.Tests
 			{
 				subject.Start();
 
-                uint id = subject.ProcessId();
+				uint id = subject.ProcessId();
 
-                var process = Process.GetProcessById((int)id);
-                Assert.That(process.HasExited, Is.False, "Exited");
+				var process = Process.GetProcessById((int)id);
+				Assert.That(process.HasExited, Is.False, "Exited");
 
-                process.Kill();
+				process.Kill();
 
 				int exitCode;
 				var exited = subject.WaitForExit(one_second, out exitCode);
@@ -204,16 +222,16 @@ namespace Integration.Tests
 			}
 		}
 
-        [Test]
-        public void process_is_killed_when_process_host_is_disposed ()
-        {
-            uint processId;
-            using (var subject = new ProcessHost("./ExampleInteractiveProcess.exe", Directory.GetCurrentDirectory()))
-            {
-	            subject.Start();
-                processId = subject.ProcessId();
-            }
-            Thread.Sleep(500);
+		[Test]
+		public void process_is_killed_when_process_host_is_disposed()
+		{
+			uint processId;
+			using (var subject = new ProcessHost("./ExampleInteractiveProcess.exe", Directory.GetCurrentDirectory()))
+			{
+				subject.Start();
+				processId = subject.ProcessId();
+			}
+			Thread.Sleep(500);
 			try
 			{
 				// system.diagnostics.process throws in debug mode, returns null in release mode!
@@ -224,28 +242,28 @@ namespace Integration.Tests
 			{
 				Assert.Pass();
 			}
-            catch (InvalidOperationException)
-            {
-                Assert.Pass();
-            }
-            Assert.Fail();
-        }
+			catch (InvalidOperationException)
+			{
+				Assert.Pass();
+			}
+			Assert.Fail();
+		}
 
-        [Test, Explicit,
+		[Test, Explicit,
 		Description(
 @"This test should cause high CPU use, but should not exhaust Handle count
 or increase memory use. Check that no child processes are open after running.")]
-        public void stress_test ()
-        {
-	        for (int i = 0; i < 10000; i++)
-	        {
-		        using (var subject = new ProcessHost("./ExampleNoninteractiveProcess.exe", Directory.GetCurrentDirectory()))
-		        {
-			        subject.Start();
-		        }
-	        }
+		public void stress_test()
+		{
+			for (int i = 0; i < 10000; i++)
+			{
+				using (var subject = new ProcessHost("./ExampleNoninteractiveProcess.exe", Directory.GetCurrentDirectory()))
+				{
+					subject.Start();
+				}
+			}
 
-            Assert.Pass();
-        }
+			Assert.Pass();
+		}
 	}
 }

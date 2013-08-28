@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using RunProcess.Internal;
@@ -19,6 +20,7 @@ namespace RunProcess
 		readonly Pipe _stdOut;
 		readonly string _executablePath;
 		readonly string _workingDirectory;
+		int _lastExitCode;
 
 		/// <summary>
 		/// Returns true if the host operating system can run
@@ -42,11 +44,13 @@ namespace RunProcess
 			if (!HostIsCompatible()) throw new NotSupportedException("The host operating system is not compatible");
 
 			_executablePath = executablePath;
-			_workingDirectory = workingDirectory;
+			_workingDirectory = DefaultToCurrentIfEmpty(workingDirectory);
 
 			_stdIn = new Pipe(Pipe.Direction.In);
 			_stdErr = new Pipe(Pipe.Direction.Out);
 			_stdOut = new Pipe(Pipe.Direction.Out);
+
+			_lastExitCode = 0;
 
 			_si = new Kernel32.Startupinfo
 			{
@@ -59,6 +63,11 @@ namespace RunProcess
 
 			_si.cb = (uint)Marshal.SizeOf(_si);
 			_pi = new Kernel32.ProcessInformation();
+		}
+
+		string DefaultToCurrentIfEmpty(string s)
+		{
+			return (string.IsNullOrWhiteSpace(s)) ? (Directory.GetCurrentDirectory()) : (s);
 		}
 
 		/// <summary>
@@ -75,10 +84,7 @@ namespace RunProcess
 		/// </summary>
 		public void Start(string arguments)
 		{
-			string safePath;
-
-			if (_executablePath.StartsWith("\"") && _executablePath.EndsWith("\"")) safePath = _executablePath;
-			else safePath = "\"" + _executablePath + "\"";
+			var safePath = WrapPathsInQuotes(_executablePath);
 
 			if (arguments != null)
 			{
@@ -88,6 +94,13 @@ namespace RunProcess
 
 			if (!Kernel32.CreateProcess(null, safePath, IntPtr.Zero, IntPtr.Zero, true, 0, IntPtr.Zero, _workingDirectory, ref _si, out _pi))
 				throw new Win32Exception(Marshal.GetLastWin32Error());
+		}
+
+		static string WrapPathsInQuotes(string path)
+		{
+			if (path.Contains("\"")) return path; // already quoted, or would create ambiguous quotation
+			
+			return "\"" + path + "\""; // otherwise, quote all paths by default
 		}
 
 		/// <summary>
@@ -123,8 +136,7 @@ namespace RunProcess
 		/// </summary>
 		public bool WaitForExit(TimeSpan timeout)
 		{
-			int dummy;
-			return WaitForExit(timeout, out dummy);
+			return WaitForExit(timeout, out _lastExitCode);
 		}
 
 		/// <summary>
@@ -135,20 +147,18 @@ namespace RunProcess
 		/// </summary>
 		public bool WaitForExit(TimeSpan timeout, out int exitCode)
 		{
-			exitCode = 0;
+			exitCode = _lastExitCode;
 			if ((_pi.hProcess == IntPtr.Zero) || (_pi.hThread == IntPtr.Zero)) return true;
 
-			var processRef = Kernel32.OpenProcess(Kernel32.ProcessAccessFlags.Synchronize | Kernel32.ProcessAccessFlags.QueryInformation, false, _pi.dwProcessId);
-			if (processRef == IntPtr.Zero) return true;
-			var err = Marshal.GetLastWin32Error();
+			int err;
+			var processRef = WaitForProcessReference(out err);
 
 			try
 			{
-				if (err != 0) return true;
-
-				var safeWait = (timeout.TotalMilliseconds >= long.MaxValue)
-					? long.MaxValue - 1L
-					: (long)timeout.TotalMilliseconds;
+				if (err != 0) throw new Win32Exception(err, "Could not find process");
+				
+				var requestedWait = (long)timeout.TotalMilliseconds;
+				var safeWait = Math.Min(long.MaxValue - 1L, requestedWait);
 
 				var result = Kernel32.WaitForSingleObject(processRef, safeWait);
 
@@ -160,6 +170,9 @@ namespace RunProcess
 					case Kernel32.WaitResult.WaitComplete:
 						if (!Kernel32.GetExitCodeProcess(_pi.hProcess, out exitCode))
 							throw new Win32Exception(Marshal.GetLastWin32Error());
+
+						if (exitCode == -1) exitCode = _lastExitCode;
+						else _lastExitCode = exitCode;
 						return true;
 
 					case Kernel32.WaitResult.WaitTimeout:
@@ -175,6 +188,27 @@ namespace RunProcess
 			{
 				Kernel32.CloseHandle(processRef);
 			}
+		}
+
+		IntPtr WaitForProcessReference(out int err)
+		{
+			err = 0;
+
+			for (int i = 0; i < 10; i++)
+			{
+				var processRef = Kernel32.OpenProcess(
+					  Kernel32.ProcessAccessFlags.Synchronize
+					| Kernel32.ProcessAccessFlags.QueryInformation,
+					false, _pi.dwProcessId);
+
+				if (processRef == IntPtr.Zero)
+					err = Marshal.GetLastWin32Error();
+
+				if (err == 0) return processRef;
+				Thread.Sleep(100);
+			}
+
+			return IntPtr.Zero;
 		}
 
 		/// <summary>

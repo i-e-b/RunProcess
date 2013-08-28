@@ -20,5 +20,10 @@
 		/// There are no more files.
 		/// </summary>
 		public const int NoMoreFiles = 18;
+
+		/// <summary>
+		/// The handle is invalid (usually referring to a closed resource)
+		/// </summary>
+		public const int HandleIsInvalid = 6;
 	}
 }

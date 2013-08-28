@@ -4,13 +4,34 @@ using System.Threading;
 
 namespace RunProcess
 {
+	/// <summary>
+	/// Special handler for interactive shell child processes.
+	/// (e.g. FTP, telnet)
+	/// </summary>
 	public class InteractiveShell : IDisposable
 	{
-        ProcessHost _host;
+		ProcessHost _host;
 
+		/// <summary>
+		/// Name of application, as passed to Start()
+		/// </summary>
 		public string ApplicationName { get; private set; }
+
+		/// <summary>
+		/// Prompt as supplied by shell.
+		/// Used for ReadToPrompt()
+		/// </summary>
 		protected string Prompt { get; set; }
+
+		/// <summary>
+		/// Command to exit shell
+		/// Used by Terminate()
+		/// </summary>
 		protected string ExitCommand { get; set; }
+
+		/// <summary>
+		/// Text encoding of shell
+		/// </summary>
 		protected Encoding Encoding { get; set; }
 
 		/// <summary>
@@ -78,9 +99,9 @@ namespace RunProcess
 		/// </summary>
 		public void Start(string applicationName, string workDirectory)
 		{
-            _host = new ProcessHost(applicationName, workDirectory);
+			_host = new ProcessHost(applicationName, workDirectory);
 			ApplicationName = applicationName;
-            _host.Start();
+			_host.Start();
 		}
 
 		/// <summary>
@@ -98,11 +119,18 @@ namespace RunProcess
 			_host.StdIn.Write(bytesToWrite, 0, bytesToWrite.Length);
 		}
 
+		/// <summary>
+		/// Kill and dispose of child process
+		/// </summary>
 		public void Dispose()
 		{
-            _host.Dispose();
+			_host.Dispose();
 		}
 
+		/// <summary>
+		/// True is child process is still running. False if child has exited
+		/// </summary>
+		/// <returns></returns>
 		public bool IsAlive()
 		{
 			return _host.IsAlive();

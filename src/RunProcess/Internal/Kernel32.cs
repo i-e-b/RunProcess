@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace RunProcess.Internal
 {
-	public static class Kernel32
+	internal static class Kernel32
 	{
 		public const int HandleFlagInherit = 1;
 		public const UInt32 StartfUsestdhandles = 0x00000100;

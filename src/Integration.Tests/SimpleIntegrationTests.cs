@@ -13,6 +13,12 @@ namespace Integration.Tests
 	{
 		readonly TimeSpan one_second = TimeSpan.FromSeconds(1);
 
+		[TestFixtureSetUp]
+		public void is_compatible_windows ()
+		{
+			Assert.That(ProcessHost.HostIsCompatible(), "Host operating system can't run these tests");
+		}
+
 		[Test]
 		public void can_start_interact_with_and_stop_a_process()
 		{

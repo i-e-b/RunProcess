@@ -19,6 +19,25 @@ namespace Integration.Tests
 			Assert.That(ProcessHost.HostIsCompatible(), "Host operating system can't run these tests");
 		}
 
+		[Test, Explicit("Requires users to be available")]
+		[TestCase("devvirtual-pc", "exampleUser", "exampleUser")]
+		public void can_impersonate_another_user (string domain, string user, string password)
+		{
+			var expected = domain+"\\"+user+"\r\n";
+			using (var subject = new ProcessHost("whoami", null))
+			{
+				subject.StartAsAnotherUser(domain, user, password, "");
+				subject.WaitForExit(TimeSpan.FromSeconds(2));
+				Assert.That(subject.IsAlive(), Is.False);
+
+				var output = subject.StdOut.ReadAllText(Encoding.Default);
+				Assert.That(output.ToLower(), Is.EqualTo(expected.ToLower()), "Standard Out");
+
+				var err = subject.StdErr.ReadAllText(Encoding.Default);
+				Assert.That(err, Is.Empty, "Standard Error");
+			}
+		}
+
 		[Test]
 		public void can_call_environment_executables ()
 		{

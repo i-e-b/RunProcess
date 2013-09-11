@@ -61,7 +61,7 @@ namespace RunProcess
 				hStdInput = StdIn.ReadHandle
 			};
 
-			_si.cb = (uint)Marshal.SizeOf(_si);
+			_si.cb = (uint) Marshal.SizeOf(_si);
 			_pi = new Kernel32.ProcessInformation();
 		}
 
@@ -94,6 +94,33 @@ namespace RunProcess
 
 			if (!Kernel32.CreateProcess(null, safePath, IntPtr.Zero, IntPtr.Zero, true, 0, IntPtr.Zero, _workingDirectory, ref _si, out _pi))
 				throw new Win32Exception(Marshal.GetLastWin32Error());
+		}
+
+		/// <summary>
+		/// Start the process with an argument string, impersonating another user
+		/// with the supplied credentials.
+		/// Arguments will be split and passed to the child by Windows APIs.
+		/// Password is sent in the clear... caution!
+		/// </summary>
+		/// <param name="domain">Windows domain that will validate the user. This may be null</param>
+		/// <param name="user">Name of the account to impersonate. If domain is null, should use user@domain style.</param>
+		/// <param name="password">Clear text password of user account. Careful!</param>
+		/// <param name="arguments">Arguments to supply to the process</param>
+		public void StartAsAnotherUser(string domain, string user, string password, string arguments)
+		{
+			var safePath = WrapPathsInQuotes(_executablePath);
+
+			if (arguments != null)
+			{
+				safePath += " ";
+				safePath += arguments;
+			}
+
+			if (!Kernel32.CreateProcessWithLogonW(
+				user, domain, password, Kernel32.LogonFlags.NoFlags, null, safePath, 0, IntPtr.Zero, _workingDirectory,
+				ref _si, out _pi) )
+				throw new Win32Exception(Marshal.GetLastWin32Error());
+
 		}
 
 		static string WrapPathsInQuotes(string path)

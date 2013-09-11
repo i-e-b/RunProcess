@@ -70,6 +70,13 @@ namespace RunProcess.Internal
 			WaitFailed = 0xFFFFFFFFUL
 		}
 
+		public enum LogonFlags : uint
+		{
+			LogonWithProfile = 0x00000001U,
+			LogonNetCredentialsOnly = 0x00000002U,
+			NoFlags = 0
+		}
+
 		[DllImport("kernel32.dll", SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
 		public static extern bool CreateProcess(string lpApplicationName,
@@ -82,6 +89,20 @@ namespace RunProcess.Internal
 												string lpCurrentDirectory,
 												ref Startupinfo lpStartupInfo,
 												out ProcessInformation lpProcessInformation);
+
+		[DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		public static extern bool CreateProcessWithLogonW  (string lpUsername,
+															string lpDomain,
+															string lpPassword,
+															LogonFlags dwLogonFlags,
+															string lpApplicationName,
+															string lpCommandLine,
+															uint dwCreationFlags,
+															IntPtr lpEnvironment,
+															string lpCurrentDirectory,
+															ref Startupinfo lpStartupInfo,
+															out ProcessInformation lpProcessInfo);
 
 		[DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
 		public static extern IntPtr OpenProcess(ProcessAccessFlags dwDesiredAccess,

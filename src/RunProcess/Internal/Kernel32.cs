@@ -62,12 +62,12 @@ namespace RunProcess.Internal
 			Synchronize = 0x00100000
 		}
 
-		public enum WaitResult : ulong
+		public enum WaitResult : uint 
 		{
-			WaitAbandoned = 0x00000080UL,
+			WaitAbandoned = 0x00000080U,
 			WaitComplete = 0,
-			WaitTimeout = 0x00000102UL,
-			WaitFailed = 0xFFFFFFFFUL
+			WaitTimeout = 0x00000102U,
+			WaitFailed = 0xFFFFFFFFU
 		}
 
 		public enum LogonFlags : uint
@@ -110,7 +110,7 @@ namespace RunProcess.Internal
 												uint dwProcessId);
 
 		[DllImport("kernel32.dll", SetLastError = true)]
-		public static extern WaitResult WaitForSingleObject(IntPtr hHandle, long dwMilliseconds);
+		public static extern WaitResult WaitForSingleObject(IntPtr hHandle, UInt32 dwMilliseconds);
 
 		[DllImport("kernel32.dll", SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]

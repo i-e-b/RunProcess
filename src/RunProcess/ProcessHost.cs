@@ -184,8 +184,8 @@ namespace RunProcess
 			{
 				if (err != 0) throw new Win32Exception(err, "Could not find process");
 				
-				var requestedWait = (long)timeout.TotalMilliseconds;
-				var safeWait = Math.Min(long.MaxValue - 1L, requestedWait);
+				var requestedWait = (uint)timeout.TotalMilliseconds;
+				var safeWait = Math.Min(uint.MaxValue - 1, requestedWait);
 
 				var result = Kernel32.WaitForSingleObject(processRef, safeWait);
 

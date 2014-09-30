@@ -30,7 +30,7 @@ namespace RunProcess
 		public static bool HostIsCompatible()
 		{
 			var isWin32 = Environment.OSVersion.Platform == PlatformID.Win32NT;
-			var isModern = Environment.OSVersion.Version.Major >= 6;
+            var isModern = Environment.OSVersion.Version.Major >= 5;
 			return (isWin32 && isModern);
 		}
 

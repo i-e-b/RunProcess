@@ -210,12 +210,13 @@ namespace RunProcess.Internal
 			var maxMilliseconds = (long)timeout.TotalMilliseconds;
 			var sw = new Stopwatch();
 
+            var sleepThreshold = (int)(timeout.TotalMilliseconds / 10);
+
 			while (sw.ElapsedMilliseconds < maxMilliseconds)
 			{
 				while (Peek() > 0)
 				{
 					sw.Restart();
-
 
 					// This isn't a great way of doing it...
 					var len = Read(buf, 0, encoding.IsSingleByte ? 1 : 2);
@@ -236,6 +237,7 @@ namespace RunProcess.Internal
 
 					sb.Append(encoding.GetString(buf, 0, len));
 				}
+                Thread.Sleep(sleepThreshold); // no waiting data. Sleep a fraction of the timeout to wait for some
 			}
 
 			return sb.ToString();

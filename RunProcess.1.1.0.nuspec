@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <metadata>
+    <id>RunProcess</id>
+    <version>1.1.0</version>
+    <title>RunProcess</title>
+    <authors>iainb</authors>
+    <owners>iainb</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <licenseUrl>https://github.com/i-e-b/RunProcess/blob/master/LICENSE</licenseUrl>
+    <projectUrl>https://github.com/i-e-b/RunProcess</projectUrl>
+    <description>A process host for Windows (Vista and later) that is more reliable and flexible than System.Diagnostics.Process</description>
+    <summary>Run Windows processes, a replacement for System.Diagnostics.Process</summary>
+    <releaseNotes>Child process start
+More options from reading pipes</releaseNotes>
+    <language>en-GB</language>
+    <tags>win32 run process child parent stdin stdout stderr NT pipe</tags>
+  </metadata>
+  <files>
+    <file src="lib\net40\RunProcess.dll" target="lib\net40\RunProcess.dll" />
+    <file src="lib\net40\RunProcess.pdb" target="lib\net40\RunProcess.pdb" />
+    <file src="lib\net40\RunProcess.xml" target="lib\net40\RunProcess.xml" />
+  </files>
+</package>

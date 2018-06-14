@@ -3,6 +3,7 @@ packages/
 .vs/
 bin
 deploy
+*.nupkg
 *.csproj.user
 *.suo
 *.cache

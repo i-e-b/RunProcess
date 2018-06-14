@@ -44,7 +44,7 @@ namespace Integration.Tests
 			using (var subject = new ProcessHost("net", null))
 			{
 				subject.Start();
-				Thread.Sleep(250);
+                subject.WaitForExit(TimeSpan.FromSeconds(5));
 
 				Assert.That(subject.IsAlive(), Is.False);
 
@@ -83,14 +83,14 @@ namespace Integration.Tests
 			using (var subject = new ProcessHost("./ExampleNoninteractiveProcess.exe", Directory.GetCurrentDirectory()))
 			{
 				subject.Start();
-				Thread.Sleep(250);
+				Thread.Sleep(500);
 
 				Assert.That(subject.IsAlive(), Is.False);
 
-				var output = subject.StdOut.ReadAllText(Encoding.Default);
+				var output = subject.StdOut.ReadAllWithTimeout(Encoding.Default, TimeSpan.FromSeconds(10));
 				Assert.That(output, Is.StringStarting(ExampleNoninteractiveProcess.Program.StdOutMsg), "Standard Out");
 
-				var err = subject.StdErr.ReadAllText(Encoding.Default);
+				var err = subject.StdErr.ReadAllWithTimeout(Encoding.Default, TimeSpan.FromSeconds(10));
 				Assert.That(err, Is.StringStarting(ExampleNoninteractiveProcess.Program.StdErrMsg), "Standard Error");
 			}
 		}
@@ -101,9 +101,9 @@ namespace Integration.Tests
 			using (var subject = new ProcessHost("./ExampleNoninteractiveProcess.exe", Directory.GetCurrentDirectory()))
 			{
 				subject.Start("print hello world");
-				Thread.Sleep(250);
+				Thread.Sleep(500);
 
-				var output = subject.StdOut.ReadAllText(Encoding.Default);
+				var output = subject.StdOut.ReadAllWithTimeout(Encoding.Default, TimeSpan.FromSeconds(10));
 				Assert.That(output, Is.StringStarting("hello world"));
 			}
 		}
@@ -268,7 +268,42 @@ namespace Integration.Tests
 			Assert.Fail();
 		}
 
-		[Test, Explicit,
+
+        [Test]
+        public void can_start_process_as_child()
+        {
+            using (var subject = new ProcessHost("./ExampleNoninteractiveProcess.exe", Directory.GetCurrentDirectory()))
+            {
+                subject.StartAsChild("print hello world");
+                Thread.Sleep(500);
+                var output = subject.StdOut.ReadAllText(Encoding.Default);
+                //var output = subject.StdOut.ReadToTimeout(Encoding.Default, TimeSpan.FromSeconds(10));
+                Assert.That(output, Is.StringStarting("hello world"));
+            }
+        }
+
+        [Test]
+        public void child_process_can_be_killed_when_parent_is_killed()
+        {
+            Process p;
+            int pid;
+            using (var subject = new ProcessHost("./ExampleNoninteractiveProcess.exe", Directory.GetCurrentDirectory()))
+            {
+                // start a process, which calls `StartAsChild`. Then kill that process and check the child died
+                subject.Start("spawn");
+                var output = subject.StdOut.ReadToTimeout(Encoding.Default, TimeSpan.FromSeconds(1));
+                var ok = int.TryParse(output, out pid);
+                Assert.That(ok, Is.True, "PID was {" + output +"}");
+                
+                p = Process.GetProcessById(pid);
+                Assert.That(p.HasExited, Is.False, "Child process not running");
+            }
+            Thread.Sleep(500);
+
+            Assert.That(p.HasExited, Is.True, "Child process is still running (pid = " + pid + ")");
+        }
+
+        [Test, Explicit,
 		Description(
 @"This test should cause high CPU use, but should not exhaust Handle count
 or increase memory use. Check that no child processes are open after running.")]

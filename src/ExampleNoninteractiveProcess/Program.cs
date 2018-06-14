@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Text;
 using System.Threading;
+using RunProcess;
 
 namespace ExampleNoninteractiveProcess
 {
@@ -25,6 +26,18 @@ namespace ExampleNoninteractiveProcess
 	            Console.WriteLine(string.Join(" ", args.Skip(1)));
                 return 0;
             }
+
+		    if (args.Length > 0 && args[0] == "spawn")
+		    {
+                // spawn a new process, and output its ID. Then wait forever
+		        var ph = new ProcessHost("ExampleNoninteractiveProcess.exe", "");
+                ph.StartAsChild("wait");
+		        Console.WriteLine(ph.ProcessId());
+		        for(;;)
+		        {
+		            Thread.Sleep(1000);
+		        }
+		    }
 
             
             if (args.Length > 1 && args[0] == "return")

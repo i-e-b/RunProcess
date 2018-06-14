@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 15
+VisualStudioVersion = 15.0.27703.2026
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RunProcess", "src\RunProcess\RunProcess.csproj", "{F933AC72-6C91-48A8-82DB-6648FA1A5864}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Implementation", "Implementation", "{C4A07E73-A4EF-4777-81FE-798410480111}"
@@ -12,6 +14,11 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExampleInteractiveProcess", "src\ExampleInteractiveProcess\ExampleInteractiveProcess.csproj", "{2ED6AC52-1136-4487-BE79-6619FF12B693}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExampleNoninteractiveProcess", "src\ExampleNoninteractiveProcess\ExampleNoninteractiveProcess.csproj", "{E4E54BB8-C132-4B1F-B731-7B9A4A4C42AF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_info", "_info", "{788B6801-4796-40F8-8E98-4C2853D52037}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -44,5 +51,8 @@ Global
 		{EC33E87F-C86B-4FBB-AEEA-6FF597EDDD68} = {1F1B9799-FEA8-4145-90BD-087C73617EA4}
 		{2ED6AC52-1136-4487-BE79-6619FF12B693} = {1F1B9799-FEA8-4145-90BD-087C73617EA4}
 		{E4E54BB8-C132-4B1F-B731-7B9A4A4C42AF} = {1F1B9799-FEA8-4145-90BD-087C73617EA4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {ECF37D35-3BB1-4093-B119-73FB612C8E65}
 	EndGlobalSection
 EndGlobal

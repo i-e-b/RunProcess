@@ -22,6 +22,7 @@
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <DocumentationFile>bin\Debug\RunProcess.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -40,6 +41,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="InteractiveShell.cs" />
+    <Compile Include="Internal\ChildProcessTracker.cs" />
     <Compile Include="Internal\Kernel32.cs" />
     <Compile Include="Internal\Pipe.cs" />
     <Compile Include="Internal\WindowsErrors.cs" />

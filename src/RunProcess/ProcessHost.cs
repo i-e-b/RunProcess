@@ -15,14 +15,11 @@ namespace RunProcess
 	{
 		Kernel32.Startupinfo _si;
 		Kernel32.ProcessInformation _pi;
-		readonly Pipe _stdIn;
-		readonly Pipe _stdErr;
-		readonly Pipe _stdOut;
-		readonly string _executablePath;
+	    readonly string _executablePath;
 		readonly string _workingDirectory;
 		int _lastExitCode;
 
-		/// <summary>
+	    /// <summary>
 		/// Returns true if the host operating system can run
 		/// ProcessHost. If false, trying to create a new ProcessHost
 		/// will result in an exception
@@ -35,7 +32,7 @@ namespace RunProcess
 		}
 
 		/// <summary>
-		/// Create a new process wrapper with an executable path and wroking directory.
+		/// Create a new process wrapper with an executable path and working directory.
 		/// </summary>
 		/// <param name="executablePath">Path to executable</param>
 		/// <param name="workingDirectory">Starting directory for executable. May be left empty to inherit from parent</param>
@@ -46,9 +43,9 @@ namespace RunProcess
 			_executablePath = executablePath;
 			_workingDirectory = DefaultToCurrentIfEmpty(workingDirectory);
 
-			_stdIn = new Pipe(Pipe.Direction.In);
-			_stdErr = new Pipe(Pipe.Direction.Out);
-			_stdOut = new Pipe(Pipe.Direction.Out);
+			StdIn = new Pipe(Pipe.Direction.In);
+			StdErr = new Pipe(Pipe.Direction.Out);
+			StdOut = new Pipe(Pipe.Direction.Out);
 
 			_lastExitCode = 0;
 
@@ -78,11 +75,57 @@ namespace RunProcess
 			Start(null);
 		}
 
-		/// <summary>
-		/// Start the process with an argument string
-		/// Arguments will be split and passed to the child by Windows APIs
-		/// </summary>
-		public void Start(string arguments)
+        /// <summary>
+        /// Start child process, and automatically kill it if the parent process is ended.
+        /// This simulates Unix child processes.
+        /// </summary>
+        /// <remarks>This is done by attaching a debugger to the child process. You will need enough permissions to attach.
+        /// If you have the code to the child process, it would be simpler to have the child directly monitor its parent.</remarks>
+        /// <param name="arguments">Arguments will be split and passed to the child by Windows APIs</param>
+        public void StartAsChild(string arguments) {
+            var safePath = WrapPathsInQuotes(_executablePath);
+
+            if (arguments != null)
+            {
+                safePath += " ";
+                safePath += arguments;
+            }
+
+            new Thread(() =>
+            {
+                // MUST create AND listen on the same thead!
+                if (!Kernel32.CreateProcess(null, safePath, IntPtr.Zero, IntPtr.Zero, true, (uint)(Kernel32.ProcessCreationFlags.DebugOnlyThisProcess), IntPtr.Zero, _workingDirectory, ref _si, out _pi))
+                {
+                    throw new Win32Exception(Marshal.GetLastWin32Error());
+                }
+                while (true)
+                {
+                    var debug_event = new Kernel32.DEBUG_EVENT();
+                    debug_event.debugInfo = new byte[100];
+
+                    var gotEvent = Kernel32.WaitForDebugEvent(ref debug_event, int.MaxValue);
+                    if (!gotEvent) continue;
+
+                    if (debug_event.dwProcessId != _pi.dwProcessId) return; //Console.WriteLine("Received event for process " + debug_event.dwProcessId + ". We are expecting " + _pi.dwProcessId);
+                    if (debug_event.dwDebugEventCode == Kernel32.DebugEventType.EXIT_PROCESS_DEBUG_EVENT) return; // child exited, end this thread
+
+                    Kernel32.ContinueDebugEvent((uint)debug_event.dwProcessId, (uint)debug_event.dwThreadId, 0x10002);
+                }
+            })
+            { IsBackground = true }.Start();
+
+            for (int i = 0; i < 10; i++) // wait for child process to come up
+            {
+                if (IsAlive()) break;
+                Thread.Sleep(100);
+            }
+        }
+
+        /// <summary>
+        /// Start the process with an argument string
+        /// Arguments will be split and passed to the child by Windows APIs
+        /// </summary>
+        public void Start(string arguments)
 		{
 			var safePath = WrapPathsInQuotes(_executablePath);
 
@@ -133,27 +176,28 @@ namespace RunProcess
 		/// <summary>
 		/// Writable standard input pipe
 		/// </summary>
-		public Pipe StdIn { get { return _stdIn; } }
+		public Pipe StdIn { get; }
 
-		/// <summary>
+	    /// <summary>
 		/// Readable standard 'error' pipe.
 		/// Note that most processes use this for human-readable output, not only for errors
 		/// </summary>
-		public Pipe StdErr { get { return _stdErr; } }
+		public Pipe StdErr { get; }
 
-		/// <summary>
+	    /// <summary>
 		/// Readable standard output pipe.
 		/// This is usually used for machine-readable output
 		/// </summary>
-		public Pipe StdOut { get { return _stdOut; } }
+		public Pipe StdOut { get; }
 
-		/// <summary>
+	    /// <summary>
 		/// True if child process is still running. False if the child has exited.
 		/// </summary>
 		/// <returns></returns>
 		public bool IsAlive()
 		{
-			return !WaitForExit(TimeSpan.FromMilliseconds(1));
+            if (_pi.dwProcessId < 2) return false;
+            return !WaitForExit(TimeSpan.FromMilliseconds(1));
 		}
 
 		/// <summary>

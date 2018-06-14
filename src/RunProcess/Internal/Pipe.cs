@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -112,6 +113,19 @@ namespace RunProcess.Internal
 			return n;
 		}
 
+        /// <summary>
+        /// Try to read a single character from the pipe. Returns negative if no characters are available
+        /// </summary>
+        public int PeekChar(Encoding encoding)
+        {
+            var buf = new byte[2];
+            var len = PeekRead(buf, 0, encoding.IsSingleByte ? 1 : 2);
+            if (len < 1) return -1;
+            var chars = encoding.GetChars(buf);
+            if (chars.Length < 1) return -1;
+            return chars[0];
+        }
+
 		/// <summary>
 		/// Read from the pipe into a byte buffer, blocking until buffer has at least some data.
 		/// Use Peek() to determine if a read would be blocking.
@@ -166,15 +180,17 @@ namespace RunProcess.Internal
 		/// </summary>
 		public string ReadAllText(Encoding encoding)
 		{
-			var sb = new StringBuilder();
+			var ms = new MemoryStream();
 			var buf = new byte[1024];
 			while (Peek() > 0)
 			{
 				var len = Read(buf, 0, 1024);
-				sb.Append(encoding.GetString(buf, 0, len));
+                if (len < 1) break;
+                ms.Write(buf, 0, len);
 			}
 
-			return sb.ToString();
+            ms.Seek(0, SeekOrigin.Begin);
+            return encoding.GetString(ms.ToArray());
 		}
 
 		/// <summary>
@@ -195,6 +211,76 @@ namespace RunProcess.Internal
 			var bytes = encoding.GetBytes(message + Environment.NewLine);
 			Write(bytes, 0, bytes.Length);
 		}
+
+        /// <summary>
+        /// Attempt to read all text from a pipe, terminating when a timeout is exceeded
+        /// </summary>
+        public string ReadToTimeout(Encoding encoding, TimeSpan timeout) {
+            var ms = new MemoryStream();
+            var buf = new byte[1024];
+
+            var maxMilliseconds = (long)timeout.TotalMilliseconds;
+            var sw = new Stopwatch();
+
+            var sleepThreshold = (int)(timeout.TotalMilliseconds / 10);
+            sw.Start();
+
+            while (sw.ElapsedMilliseconds < maxMilliseconds)
+            {
+                while (Peek() > 0)
+                {
+                    sw.Restart();
+
+                    var len = Read(buf, 0,1024);
+                    if (len < 1) break; // break out of the peek loop, and continue waiting
+
+                    ms.Write(buf, 0, len);
+                }
+                Thread.Sleep(sleepThreshold); // no waiting data. Sleep a fraction of the timeout.
+            }
+
+            ms.Seek(0, SeekOrigin.Begin);
+            return encoding.GetString(ms.ToArray());
+        }
+        
+
+	    /// <summary>
+	    /// Read all available text on the pipe.
+	    /// If the pipe is empty, will wait up to the timeout for some to become available
+	    /// </summary>
+	    public string ReadAllWithTimeout(Encoding encoding, TimeSpan timeout)
+	    {
+	        var ms = new MemoryStream();
+	        var buf = new byte[1024];
+
+	        var maxMilliseconds = (long)timeout.TotalMilliseconds;
+	        var sw = new Stopwatch();
+
+	        var sleepThreshold = (int)(timeout.TotalMilliseconds / 10);
+	        sw.Start();
+
+	        while (sw.ElapsedMilliseconds < maxMilliseconds)
+	        {
+	            while (Peek() > 0)
+	            {
+	                sw.Restart();
+
+	                var len = Read(buf, 0,1024);
+	                if (len < 1) break; // break out of the peek loop, and continue waiting
+
+	                ms.Write(buf, 0, len);
+
+                    if (Peek() < 1) {
+                        ms.Seek(0, SeekOrigin.Begin);
+                        return encoding.GetString(ms.ToArray());
+                    }
+	            }
+	            Thread.Sleep(sleepThreshold); // no waiting data. Sleep a fraction of the timeout.
+	        }
+
+	        ms.Seek(0, SeekOrigin.Begin);
+	        return encoding.GetString(ms.ToArray());
+	    }
 
 		/// <summary>
 		/// Read text from a pipe, up until the next line ending.

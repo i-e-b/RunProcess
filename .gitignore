@@ -1,4 +1,6 @@
 obj
+packages/
+.vs/
 bin
 deploy
 *.csproj.user

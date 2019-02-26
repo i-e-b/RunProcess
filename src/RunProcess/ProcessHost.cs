@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using RunProcess.Internal;
 
@@ -72,9 +74,19 @@ namespace RunProcess
 		/// </summary>
 		public void Start()
 		{
-			Start(null);
+			Start(null, null);
 		}
 
+        
+        /// <summary>
+        /// Start the process with an argument string
+        /// Arguments will be split and passed to the child by Windows APIs
+        /// </summary>
+        public void Start(string arguments)
+        {
+            Start(arguments, null);
+        }
+        
         /// <summary>
         /// Start child process, and automatically kill it if the parent process is ended.
         /// This simulates Unix child processes.
@@ -83,6 +95,18 @@ namespace RunProcess
         /// If you have the code to the child process, it would be simpler to have the child directly monitor its parent.</remarks>
         /// <param name="arguments">Arguments will be split and passed to the child by Windows APIs</param>
         public void StartAsChild(string arguments) {
+            StartAsChild(arguments, null);
+        }
+
+        /// <summary>
+        /// Start child process, and automatically kill it if the parent process is ended.
+        /// This simulates Unix child processes.
+        /// </summary>
+        /// <remarks>This is done by attaching a debugger to the child process. You will need enough permissions to attach.
+        /// If you have the code to the child process, it would be simpler to have the child directly monitor its parent.</remarks>
+        /// <param name="arguments">Arguments will be split and passed to the child by Windows APIs</param>
+        /// <param name="environmentVariables">Optional: environment variables to pass to the child process</param>
+        public void StartAsChild(string arguments, IDictionary<string,string> environmentVariables) {
             var safePath = WrapPathsInQuotes(_executablePath);
 
             if (arguments != null)
@@ -94,10 +118,13 @@ namespace RunProcess
             new Thread(() =>
             {
                 // MUST create AND listen on the same thead!
-                if (!Kernel32.CreateProcess(null, safePath, IntPtr.Zero, IntPtr.Zero, true, (uint)(Kernel32.ProcessCreationFlags.DebugOnlyThisProcess), IntPtr.Zero, _workingDirectory, ref _si, out _pi))
+                IntPtr environmentPtr = DictToBytePtr(environmentVariables);
+                if (!Kernel32.CreateProcess(null, safePath, IntPtr.Zero, IntPtr.Zero, true, (uint)(Kernel32.ProcessCreationFlags.DebugOnlyThisProcess), environmentPtr, _workingDirectory, ref _si, out _pi))
                 {
                     throw new Win32Exception(Marshal.GetLastWin32Error());
                 }
+                Marshal.FreeHGlobal(environmentPtr);
+
                 while (true)
                 {
                     var debug_event = new Kernel32.DEBUG_EVENT();
@@ -121,11 +148,33 @@ namespace RunProcess
             }
         }
 
+        private IntPtr DictToBytePtr(IDictionary<string, string> environmentVariables)
+        {
+            if (environmentVariables == null) return IntPtr.Zero;
+            
+            var sb = new StringBuilder();
+            foreach (var variable in environmentVariables)
+            {
+                sb.Append(variable.Key);
+                sb.Append('=');
+                sb.Append(variable.Value);
+                sb.Append('\0');
+            }
+            sb.Append('\0');
+            var managedBytes = Encoding.ASCII.GetBytes(sb.ToString());
+
+            var rawBytes = Marshal.AllocHGlobal(managedBytes.Length);
+            Marshal.Copy(managedBytes, 0, rawBytes, managedBytes.Length);
+            return rawBytes;
+        }
+
         /// <summary>
-        /// Start the process with an argument string
+        /// Start the process with an argument string and environment variables.
         /// Arguments will be split and passed to the child by Windows APIs
         /// </summary>
-        public void Start(string arguments)
+        /// <param name="arguments">Arguments will be split and passed to the child by Windows APIs</param>
+        /// <param name="environmentVariables">Optional: environment variables to pass to the child process</param>
+        public void Start(string arguments, IDictionary<string,string> environmentVariables)
 		{
 			var safePath = WrapPathsInQuotes(_executablePath);
 
@@ -134,9 +183,11 @@ namespace RunProcess
 				safePath += " ";
 				safePath += arguments;
 			}
-
-			if (!Kernel32.CreateProcess(null, safePath, IntPtr.Zero, IntPtr.Zero, true, 0, IntPtr.Zero, _workingDirectory, ref _si, out _pi))
+            
+            IntPtr environmentPtr = DictToBytePtr(environmentVariables);
+			if (!Kernel32.CreateProcess(null, safePath, IntPtr.Zero, IntPtr.Zero, true, 0, environmentPtr, _workingDirectory, ref _si, out _pi))
 				throw new Win32Exception(Marshal.GetLastWin32Error());
+            Marshal.FreeHGlobal(environmentPtr);
 		}
 
 		/// <summary>

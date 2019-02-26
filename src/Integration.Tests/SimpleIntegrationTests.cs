@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -107,6 +108,24 @@ namespace Integration.Tests
 				Assert.That(output, Is.StringStarting("hello world"));
 			}
 		}
+        
+        [Test]
+        public void can_pass_environment_variables_to_process()
+        {
+            using (var subject = new ProcessHost("./ExampleNoninteractiveProcess.exe", Directory.GetCurrentDirectory()))
+            {
+                var envars = new Dictionary<string,string>{
+                    { "one", "two" },
+                    { "three", "four" }
+                };
+                subject.Start("envarg", envars);
+                Thread.Sleep(500);
+
+                var output = subject.StdOut.ReadAllWithTimeout(Encoding.Default, TimeSpan.FromSeconds(10));
+                Assert.That(output, Is.StringContaining("one = two"));
+                Assert.That(output, Is.StringContaining("three = four"));
+            }
+        }
 
 		[Test]
 		public void can_wait_for_process_and_kill_if_required()

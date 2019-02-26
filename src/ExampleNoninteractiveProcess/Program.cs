@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -24,6 +25,16 @@ namespace ExampleNoninteractiveProcess
             if (args.Length > 0 && args[0] == "print")
             {
 	            Console.WriteLine(string.Join(" ", args.Skip(1)));
+                return 0;
+            }
+
+            if (args.Length > 0 && args[0] == "envarg")
+            {
+                var envargs = Environment.GetEnvironmentVariables();
+                foreach (DictionaryEntry envarg in envargs)
+                {
+                    Console.WriteLine(envarg.Key + " = " + envarg.Value);
+                }
                 return 0;
             }
 

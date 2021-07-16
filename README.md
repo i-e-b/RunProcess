@@ -1,10 +1,11 @@
 RunProcess
 ==========
 
-A process host for Windows (Vista and later) that is more reliable and flexible than System.Diagnostics.Process
+A process host for Windows (Vista and later) that is more reliable and flexible than `System.Diagnostics.Process`
 
 Allows run-time reading from std error and output, and writing to std input.
 
+The .Net Standard build has a few less features, but will fall-back to `System.Diagnostics.Process` on non-Windows systems.
 
 Usage
 -----
